@@ -11,6 +11,17 @@ import (
 	"github.com/tealeg/xlsx"
 )
 
+type MiduPriceData struct {
+	StartMidu string `json:"startMidu"`
+	EndMidu   string `json:"endMidu"`
+	MiduPrice string `json:"miduPrice"`
+}
+
+// Struct to hold all form data
+type MiduPricesData struct {
+	MiDuPricesRows []MiduPriceData
+}
+
 // Struct to hold form data for each row
 type RowData struct {
 	Col1 string `json:"col1"`
@@ -21,18 +32,18 @@ type RowData struct {
 }
 
 // Struct to hold all form data
-type MiduPriceFormData struct {
-	Rows []RowData
-}
-
-// Struct to hold all form data
 type FormData struct {
 	Rows []RowData
 }
 
 // Global variable to store the form data
-var formDataMidu = MiduPriceFormData{Rows: make([]RowData, 0)}
-var formData = FormData{Rows: make([]RowData, 0)}
+var formDataMidu = MiduPricesData{MiDuPricesRows: make([]MiduPriceData, 1)}
+var formData = FormData{Rows: make([]RowData, 1)}
+
+type CombinedFormData struct {
+	MiduPricesData
+	FormData
+}
 
 // Handler to serve the form
 func formHandler(w http.ResponseWriter, r *http.Request) {
@@ -44,8 +55,17 @@ func formHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	combinedData := CombinedFormData{
+		MiduPricesData: formDataMidu,
+		FormData:       formData,
+	}
+
 	// Execute the template with form data
-	tmpl.Execute(w, formData)
+	err = tmpl.Execute(w, combinedData)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
 
 // Auto-save handler to update form data
@@ -83,7 +103,7 @@ func autoSaveHandler(w http.ResponseWriter, r *http.Request) {
 
 // Handler to add a new row to the form
 func addRowMiduHandler(w http.ResponseWriter, r *http.Request) {
-	formData.Rows = append(formData.Rows, RowData{})
+	formDataMidu.MiDuPricesRows = append(formDataMidu.MiDuPricesRows, MiduPriceData{})
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -101,6 +121,10 @@ func submitHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // Export XLSX file handler
+func deleteRowHandler(w http.ResponseWriter, r *http.Request) {
+
+}
+
 func exportXLSXHandler(w http.ResponseWriter, r *http.Request) {
 	file := xlsx.NewFile()
 	sheet, _ := file.AddSheet("Sheet1")
@@ -132,6 +156,7 @@ func main() {
 	http.HandleFunc("/add-row-midu", addRowMiduHandler) // Add new midu row endpoint
 	http.HandleFunc("/submit", submitHandler)           // Submit form endpoint
 	http.HandleFunc("/download-xlsx", exportXLSXHandler)
+	http.HandleFunc("/delete-row", deleteRowHandler)
 
 	fmt.Println("Starting server at :8080")
 	if err := http.ListenAndServe(":8080", nil); err != nil {

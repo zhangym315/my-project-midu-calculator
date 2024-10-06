@@ -108,6 +108,18 @@
             font-size: 16px;
         }
 
+        .delete-btn {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .delete-btn:hover {
+            background-color: #c82333;
+        }
+
     </style>
 </head>
 <body>
@@ -118,21 +130,17 @@
     <table id="midubiao">
         <thead>
         <tr class="inputcolumn">
-            <th>运输方式</th>
-            <th>货号</th>
-            <th>重量</th>
-            <th>体积</th>
-            <th>单票密度</th>
+            <th>密度最小</th>
+            <th>密度最大</th>
+            <th>价格</th>
         </tr>
         </thead>
         <tbody id="formTableBody1">
-        {{range $index, $row := .Rows}}
+        {{range $index, $row := .MiDuPricesRows}}
         <tr>
-            <td><input style="width: 90%;" type="text" value="{{$row.Col1}}" onchange="autoSave({{$index}}, 'col1', this.value)"></td>
-            <td><input style="width: 90%;" type="text" value="{{$row.Col2}}" onchange="autoSave({{$index}}, 'col2', this.value)"></td>
-            <td><input style="width: 90%;" type="text" value="{{$row.Col3}}" onchange="autoSave({{$index}}, 'col3', this.value)"></td>
-            <td><input style="width: 90%;" type="text" value="{{$row.Col4}}" onchange="autoSave({{$index}}, 'col4', this.value)"></td>
-            <td><input style="width: 90%;" type="text" value="{{$row.Col5}}" onchange="autoSave({{$index}}, 'col5', this.value)"></td>
+            <td><input style="width: 90%;" type="text" value="{{$row.StartMidu}}" onchange="autoSave({{$index}}, 'startMidu', this.value)"></td>
+            <td><input style="width: 90%;" type="text" value="{{$row.EndMidu}}" onchange="autoSave({{$index}}, 'endMidu', this.value)"></td>
+            <td><input style="width: 90%;" type="text" value="{{$row.MiduPrice}}" onchange="autoSave({{$index}}, 'miduPrice', this.value)"></td>
         </tr>
         {{end}}
         </tbody>
@@ -159,6 +167,7 @@
             <td><input style="width: 90%;" type="text" value="{{$row.Col3}}" onchange="autoSave({{$index}}, 'col3', this.value)"></td>
             <td><input style="width: 90%;" type="text" value="{{$row.Col4}}" onchange="autoSave({{$index}}, 'col4', this.value)"></td>
             <td><input style="width: 90%;" type="text" value="{{$row.Col5}}" onchange="autoSave({{$index}}, 'col5', this.value)"></td>
+            <td><button type="button" class="delete-btn" onclick="deleteRow(this)">Delete</button></td>
         </tr>
         {{end}}
         </tbody>
@@ -264,6 +273,17 @@
                     tableBody.appendChild(tr);
                 });
             });
+    }
+
+    // Function to delete a row
+    function deleteRow(button) {
+        var row = button.parentElement.parentElement;
+        fetch('/delete-row', {
+            method: 'POST',
+            row: row
+        }). then(response => {
+            row.remove();
+        })
     }
 </script>
 </body>
