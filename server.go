@@ -52,6 +52,7 @@ func formHandler(w http.ResponseWriter, r *http.Request) {
 	tmpl, err := template.ParseFiles(tmplPath)
 	if err != nil {
 		http.Error(w, "Error loading template", http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -145,6 +146,15 @@ func exportXLSXHandler(w http.ResponseWriter, r *http.Request) {
 	file.Write(w)
 }
 
+func submitAllHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodPost {
+		// Parse the form data
+		r.ParseForm()
+	} else {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+	}
+}
+
 func main() {
 	// Serve static files (e.g., CSS and JS files)
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
@@ -157,6 +167,7 @@ func main() {
 	http.HandleFunc("/submit", submitHandler)           // Submit form endpoint
 	http.HandleFunc("/download-xlsx", exportXLSXHandler)
 	http.HandleFunc("/delete-row", deleteRowHandler)
+	http.HandleFunc("/submitall", submitAllHandler)
 
 	fmt.Println("Starting server at :8080")
 	if err := http.ListenAndServe(":8080", nil); err != nil {

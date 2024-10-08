@@ -137,13 +137,12 @@
         </tr>
         </thead>
         <tbody id="formTableBody1">
-        {{range $index, $row := .MiDuPricesRows}}
         <tr>
-            <td><input style="width: 90%;" type="text" value="{{$row.StartMidu}}" onchange="autoSave({{$index}}, 'startMidu', this.value)"></td>
-            <td><input style="width: 90%;" type="text" value="{{$row.EndMidu}}" onchange="autoSave({{$index}}, 'endMidu', this.value)"></td>
-            <td><input style="width: 90%;" type="text" value="{{$row.MiduPrice}}" onchange="autoSave({{$index}}, 'miduPrice', this.value)"></td>
+            <td><input style="width: 90%;" type="text"></td>
+            <td><input style="width: 90%;" type="text"></td>
+            <td><input style="width: 90%;" type="text"></td>
+            <td style="border: none;"><button type="button" class="delete-btn" onclick="deleteRow(this)">Delete</button></td>
         </tr>
-        {{end}}
         </tbody>
     </table>
     <button class="btn" onclick="addRowMiduBiao()">增加密度价格</button>
@@ -161,22 +160,20 @@
         </tr>
         </thead>
         <tbody id="formTableBody">
-        {{range $index, $row := .Rows}}
         <tr>
-            <td><input style="width: 90%;" type="text" value="{{$row.Col1}}" onchange="autoSave({{$index}}, 'col1', this.value)"></td>
-            <td><input style="width: 90%;" type="text" value="{{$row.Col2}}" onchange="autoSave({{$index}}, 'col2', this.value)"></td>
-            <td><input style="width: 90%;" type="text" value="{{$row.Col3}}" onchange="autoSave({{$index}}, 'col3', this.value)"></td>
-            <td><input style="width: 90%;" type="text" value="{{$row.Col4}}" onchange="autoSave({{$index}}, 'col4', this.value)"></td>
-            <td><input style="width: 90%;" type="text" value="{{$row.Col5}}" onchange="autoSave({{$index}}, 'col5', this.value)"></td>
+            <td><input style="width: 90%;" type="text" ></td>
+            <td><input style="width: 90%;" type="text" ></td>
+            <td><input style="width: 90%;" type="text" ></td>
+            <td><input style="width: 90%;" type="text" ></td>
+            <td><input style="width: 90%;" type="text" ></td>
             <td style="border: none;"><button type="button" class="delete-btn" onclick="deleteRow(this)">Delete</button></td>
         </tr>
-        {{end}}
         </tbody>
     </table>
 
     <button class="btn" onclick="addRow()">增加一行</button>
     <br><br><br><br><br>
-    <button class="btn-secondary" onclick="submitForm()">生成数据</button>
+    <button class="btn-secondary" onclick="submitAllForms()">生成数据</button>
 
     <!-- Submitted Data Section -->
     <div id="submittedData">
@@ -229,6 +226,44 @@
 
     // Function to add a new row
     function addRowMiduBiao() {
+        const table = document.getElementById('formTableBody1');
+
+        // Create a new row
+        const newRow = document.createElement('tr');
+
+        // Create new cells for the row
+        const cell1 = document.createElement('td');
+        const cell2 = document.createElement('td');
+        const cell3 = document.createElement('td');
+        const cell4 = document.createElement('td'); // For the delete button
+        cell4.style.border = 'none';
+
+        // Add input elements to the new cells
+        cell1.innerHTML = '<input style="width: 90%;" type="text" name="field1[]">';
+        cell2.innerHTML = '<input style="width: 90%;" type="text" name="field2[]">';
+        cell3.innerHTML = '<input style="width: 90%;" type="text" name="field3[]">';
+
+        // Create a delete button
+        const deleteBtn = document.createElement('button');
+        deleteBtn.textContent = 'Delete';
+        deleteBtn.classList.add('delete-btn');
+        deleteBtn.onclick = function() {
+            table.deleteRow(newRow.rowIndex); // Deletes the row when clicked
+        };
+
+        // Append the delete button to the last cell
+        cell4.appendChild(deleteBtn);
+
+        // Append the cells to the new row
+        newRow.appendChild(cell1);
+        newRow.appendChild(cell2);
+        newRow.appendChild(cell3);
+        newRow.appendChild(cell4);
+
+        // Append the new row to the table
+        table.appendChild(newRow);
+
+        /*
         fetch('/add-row-midu', {
             method: 'POST',
         }).then(response => {
@@ -237,20 +272,53 @@
             } else {
                 console.error('Failed to add row');
             }
-        });
+        });*/
     }
 
     // Function to add a new row
     function addRow() {
-        fetch('/add-row', {
-            method: 'POST',
-        }).then(response => {
-            if (response.ok) {
-                window.location.reload(); // Reload the page to display the new row
-            } else {
-                console.error('Failed to add row');
-            }
-        });
+        const table = document.getElementById('formTableBody');
+
+        // Create a new row
+        const newRow = document.createElement('tr');
+
+        // Create new cells for the row
+        const cell1 = document.createElement('td');
+        const cell2 = document.createElement('td');
+        const cell3 = document.createElement('td');
+        const cell4 = document.createElement('td');
+        const cell5 = document.createElement('td');
+        const cell6 = document.createElement('td'); // For the delete button
+        cell6.style.border = 'none';
+
+        // Add input elements to the new cells
+        cell1.innerHTML = '<input style="width: 90%;" type="text" name="field1[]">';
+        cell2.innerHTML = '<input style="width: 90%;" type="text" name="field2[]">';
+        cell3.innerHTML = '<input style="width: 90%;" type="text" name="field3[]">';
+        cell4.innerHTML = '<input style="width: 90%;" type="text" name="field3[]">';
+        cell5.innerHTML = '<input style="width: 90%;" type="text" name="field3[]">';
+
+        // Create a delete button
+        const deleteBtn = document.createElement('button');
+        deleteBtn.textContent = 'Delete';
+        deleteBtn.classList.add('delete-btn');
+        deleteBtn.onclick = function() {
+            table.deleteRow(newRow.rowIndex); // Deletes the row when clicked
+        };
+
+        // Append the delete button to the last cell
+        cell6.appendChild(deleteBtn);
+
+        // Append the cells to the new row
+        newRow.appendChild(cell1);
+        newRow.appendChild(cell2);
+        newRow.appendChild(cell3);
+        newRow.appendChild(cell4);
+        newRow.appendChild(cell5);
+        newRow.appendChild(cell6);
+
+        // Append the new row to the table
+        table.appendChild(newRow);
     }
 
     // Function to submit the form and append data as form in the submitted data section
@@ -281,6 +349,38 @@
         var row = button.parentElement.parentElement;
         row.remove();
     }
+
+    function submitAllForms() {
+        const form1 = document.getElementById('midubiao');
+        const form2 = document.getElementById('formTable');
+
+        // Create a FormData object and append data from both forms
+        const formData = new FormData(form1);
+        const formData2 = new FormData(form2);
+
+        formData.forEach((value, key) => {
+            formData.append(key, value); // Append form1 data
+        });
+        formData2.forEach((value, key) => {
+            formData.append(key, value); // Append form2 data
+        });
+
+        // Send the combined form data to the server
+        fetch('/submitall', {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Success:', data);
+                alert('Forms submitted successfully!');
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                alert('Error submitting forms.');
+            });
+    }
+
 </script>
 </body>
 </html>
