@@ -182,11 +182,11 @@
             <table id="submittedDataTable">
                 <thead>
                 <tr>
-                    <th>Column 1</th>
-                    <th>Column 2</th>
-                    <th>Column 3</th>
-                    <th>Column 4</th>
-                    <th>Column 5</th>
+                    <th>拼货组合</th>
+                    <th>拼货重量</th>
+                    <th>拼货体积</th>
+                    <th>拼货密度</th>
+                    <th>拼货价格</th>
                 </tr>
                 </thead>
                 <tbody id="submittedDataBody">
@@ -351,34 +351,75 @@
     }
 
     function submitAllForms() {
-        const form1 = document.getElementById('midubiao');
-        const form2 = document.getElementById('formTable');
+        const table = document.getElementById('formTable');
+        const rows = table.querySelectorAll('tbody tr');
+        const data = [];
 
-        // Create a FormData object and append data from both forms
-        const formData = new FormData(form1);
-        const formData2 = new FormData(form2);
-
-        formData.forEach((value, key) => {
-            formData.append(key, value); // Append form1 data
+        // Loop through each row to collect data
+        rows.forEach(row => {
+            const cells = row.querySelectorAll('td input');
+            const rowData = {
+                col1: cells[0].value,
+                col2: cells[1].value,
+                col3: cells[2].value,
+                col4: cells[3].value,
+                col5: cells[4].value
+            };
+            data.push(rowData);
         });
-        formData2.forEach((value, key) => {
-            formData.append(key, value); // Append form2 data
+
+        const tablemidu = document.getElementById('midubiao');
+        const rowsmidu = table.querySelectorAll('tbody tr');
+        const datamidu = [];
+        // Loop through each row to collect data
+        rowsmidu.forEach(row => {
+            const cells = row.querySelectorAll('td input');
+            const rowData = {
+                minMidu: cells[0].value,
+                maxMidu: cells[1].value,
+                price: cells[2].value,
+            };
+            datamidu.push(rowData);
         });
 
-        // Send the combined form data to the server
+        const allData = [];
+        allData.push(datamidu);
+        allData.push(data);
+
+        console.log('allData=' + JSON.stringify(allData));
+        // Send the collected data to the server
         fetch('/submitall', {
             method: 'POST',
-            body: formData
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(allData) // Convert data to JSON format
         })
-            .then(response => response.json())
+        .then(response => response.json())
             .then(data => {
-                console.log('Success:', data);
-                alert('Forms submitted successfully!');
+                const tableBody = document.getElementById('submittedDataBody');
+                tableBody.innerHTML = ''; // Clear existing data
+
+                data.forEach((row, index) => {
+                    console.log('row=', row);
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                          <td>${row.col1}</td>
+                          <td>${row.col2}</td>
+                          <td>${row.col3}</td>
+                          <td>${row.col4}</td>
+                          <td>${row.col5}</td>
+                      `;
+                    tableBody.appendChild(tr);
+                });
             })
-            .catch((error) => {
-                console.error('Error:', error);
-                alert('Error submitting forms.');
-            });
+        .then(result => {
+            console.log('Success');
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('错误的数据.');
+        });
     }
 
 </script>

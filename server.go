@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"io"
 	"log"
 	"net/http"
 	"path/filepath"
@@ -146,10 +147,90 @@ func exportXLSXHandler(w http.ResponseWriter, r *http.Request) {
 	file.Write(w)
 }
 
+// Structs for decoding the two arrays
+type MiduData struct {
+	MinMidu string `json:"minMidu"`
+	MaxMidu string `json:"maxMidu"`
+	Price   string `json:"price"`
+}
+
+type ColumnData struct {
+	Col1 string `json:"col1"`
+	Col2 string `json:"col2"`
+	Col3 string `json:"col3"`
+	Col4 string `json:"col4"`
+	Col5 string `json:"col5"`
+}
+
 func submitAllHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
-		// Parse the form data
-		r.ParseForm()
+		// Read the entire body
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, "Error reading request body", http.StatusInternalServerError)
+			return
+		}
+
+		// Print the body as a string to the console
+		fmt.Println("Request Body:", string(body))
+		// JSON data
+		jsonData := string(body)
+
+		// Declare variables to hold the decoded data
+		var miduData []MiduData
+		var columnData []ColumnData
+
+		// Wrap the two arrays in a single slice of interface{} to decode both
+		var parsedData []interface{}
+
+		// Parse the JSON data
+		err = json.Unmarshal([]byte(jsonData), &parsedData)
+		if err != nil {
+			fmt.Println("Error decoding JSON:", err)
+			return
+		}
+
+		// Parse the first array (Midu data)
+		miduArray, err := json.Marshal(parsedData[0])
+		if err != nil {
+			fmt.Println("Error encoding first array:", err)
+			return
+		}
+		err = json.Unmarshal(miduArray, &miduData)
+		if err != nil {
+			fmt.Println("Error decoding Midu data:", err)
+			return
+		}
+
+		// Parse the second array (Column data)
+		columnArray, err := json.Marshal(parsedData[1])
+		if err != nil {
+			fmt.Println("Error encoding second array:", err)
+			return
+		}
+		err = json.Unmarshal(columnArray, &columnData)
+		if err != nil {
+			fmt.Println("Error decoding Column data:", err)
+			return
+		}
+
+		// Output the parsed data
+		fmt.Println("Midu Data:", miduData)
+		fmt.Println("Column Data:", columnData)
+
+		// Print received data
+		for _, row := range columnData {
+			fmt.Printf("Received row: col1=%s, col2=%s, col3=%s, col4=%s, col5=%s\n", row.Col1, row.Col2, row.Col3, row.Col4, row.Col5)
+		}
+
+		for _, row := range miduData {
+			fmt.Printf("Received row: col1=%s, col2=%s, col3=%s, col4=%s, col5=%s\n", row.MinMidu, row.MaxMidu, row.Price)
+		}
+
+		// Respond back with a success message
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(columnData)
+
 	} else {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 	}
