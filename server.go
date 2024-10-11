@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/tealeg/xlsx"
@@ -163,6 +164,15 @@ type ColumnData struct {
 	Col5 string `json:"col5"`
 }
 
+type ColumnDataReturnedToHtml struct {
+	Col0 string `json:"col0"`
+	Col1 string `json:"col1"`
+	Col2 string `json:"col2"`
+	Col3 string `json:"col3"`
+	Col4 string `json:"col4"`
+	Col5 string `json:"col5"`
+}
+
 // Function to generate all permutations of the elements
 func generatePermutations(arr []string) [][]string {
 	var result [][]string
@@ -190,6 +200,42 @@ func generatePermutations(arr []string) [][]string {
 
 	// Start the permutation generation process
 	permute(0)
+	return result
+}
+
+// Function to generate all partitions of the elements
+func partition(arr []string) [][][]string {
+	// This will store all partitions
+	var result [][][]string
+
+	// Helper function for recursively generating partitions
+	var generate func([][]string, int)
+	generate = func(current [][]string, index int) {
+		// If we've processed all elements, add the current partition to the result
+		if index == len(arr) {
+			// Append a copy of current partition
+			partitionCopy := make([][]string, len(current))
+			for i := range current {
+				partitionCopy[i] = append([]string(nil), current[i]...)
+			}
+			result = append(result, partitionCopy)
+			return
+		}
+
+		// Try to add arr[index] to an existing subset in current partition
+		for i := range current {
+			current[i] = append(current[i], arr[index])
+			generate(current, index+1)
+			current[i] = current[i][:len(current[i])-1] // backtrack
+		}
+
+		// Or, create a new subset with arr[index]
+		newSubset := []string{arr[index]}
+		generate(append(current, newSubset), index+1)
+	}
+
+	// Start the recursive partition generation
+	generate([][]string{}, 0)
 	return result
 }
 
@@ -262,11 +308,17 @@ func submitAllHandler(w http.ResponseWriter, r *http.Request) {
 
 		fmt.Println("array:", array)
 
-		var returnedData []ColumnData
+		var returnedData []ColumnDataReturnedToHtml
 
-		allCombinations := generatePermutations(array)
+		allCombinations := partition(array)
+		indexNumber := 1
 		for _, e := range allCombinations {
-			returnedData = append(returnedData, ColumnData{Col1: strings.Join(e, ", ")})
+			var rowData string
+			for _, r := range e {
+				rowData = rowData + "(" + strings.Join(r, ", ") + ")\n"
+			}
+			returnedData = append(returnedData, ColumnDataReturnedToHtml{Col0: strconv.Itoa(indexNumber), Col1: rowData})
+			indexNumber++
 		}
 
 		// Respond back with a success message

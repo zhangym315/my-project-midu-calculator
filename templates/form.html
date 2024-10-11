@@ -182,6 +182,7 @@
             <table id="submittedDataTable">
                 <thead>
                 <tr>
+                    <th>序号</th>
                     <th>拼货组合</th>
                     <th>拼货重量</th>
                     <th>拼货体积</th>
@@ -321,29 +322,6 @@
         table.appendChild(newRow);
     }
 
-    // Function to submit the form and append data as form in the submitted data section
-    function submitForm() {
-        fetch('/submit', {
-            method: 'POST',
-        }).then(response => response.json())
-            .then(data => {
-                const tableBody = document.getElementById('submittedDataBody');
-                tableBody.innerHTML = ''; // Clear existing data
-
-                data.forEach((row, index) => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                          <td><input type="text" value="${row.Col1}" onchange="autoSave(${index}, 'col1', this.value)"></td>
-                          <td><input type="text" value="${row.Col2}" onchange="autoSave(${index}, 'col2', this.value)"></td>
-                          <td><input type="text" value="${row.Col3}" onchange="autoSave(${index}, 'col3', this.value)"></td>
-                          <td><input type="text" value="${row.Col4}" onchange="autoSave(${index}, 'col4', this.value)"></td>
-                          <td><input type="text" value="${row.Col5}" onchange="autoSave(${index}, 'col5', this.value)"></td>
-                      `;
-                    tableBody.appendChild(tr);
-                });
-            });
-    }
-
     // Function to delete a row
     function deleteRow(button) {
         var row = button.parentElement.parentElement;
@@ -369,7 +347,7 @@
         });
 
         const tablemidu = document.getElementById('midubiao');
-        const rowsmidu = table.querySelectorAll('tbody tr');
+        const rowsmidu = tablemidu.querySelectorAll('tbody tr');
         const datamidu = [];
         // Loop through each row to collect data
         rowsmidu.forEach(row => {
@@ -404,6 +382,7 @@
                     console.log('row=', row);
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
+                          <td>${row.col0}</td>
                           <td>${row.col1}</td>
                           <td>${row.col2}</td>
                           <td>${row.col3}</td>
