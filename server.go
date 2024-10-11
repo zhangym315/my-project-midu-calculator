@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
+	"strings"
 
 	"github.com/tealeg/xlsx"
 )
@@ -162,6 +163,36 @@ type ColumnData struct {
 	Col5 string `json:"col5"`
 }
 
+// Function to generate all permutations of the elements
+func generatePermutations(arr []string) [][]string {
+	var result [][]string
+
+	// Recursive function to generate permutations
+	var permute func(start int)
+	permute = func(start int) {
+		// If we've reached the end of the array, add the permutation to the result
+		if start == len(arr)-1 {
+			// Append a copy of arr to result
+			result = append(result, append([]string(nil), arr...))
+			return
+		}
+
+		// Loop through the array, generating permutations
+		for i := start; i < len(arr); i++ {
+			// Swap the current element with the starting element
+			arr[start], arr[i] = arr[i], arr[start]
+			// Recursively generate permutations with the next elements
+			permute(start + 1)
+			// Backtrack: swap back to the original positions
+			arr[start], arr[i] = arr[i], arr[start]
+		}
+	}
+
+	// Start the permutation generation process
+	permute(0)
+	return result
+}
+
 func submitAllHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		// Read the entire body
@@ -219,7 +250,9 @@ func submitAllHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Column Data:", columnData)
 
 		// Print received data
+		var array []string
 		for _, row := range columnData {
+			array = append(array, row.Col2)
 			fmt.Printf("Received row: col1=%s, col2=%s, col3=%s, col4=%s, col5=%s\n", row.Col1, row.Col2, row.Col3, row.Col4, row.Col5)
 		}
 
@@ -227,9 +260,18 @@ func submitAllHandler(w http.ResponseWriter, r *http.Request) {
 			fmt.Printf("Received row: col1=%s, col2=%s, col3=%s, col4=%s, col5=%s\n", row.MinMidu, row.MaxMidu, row.Price)
 		}
 
+		fmt.Println("array:", array)
+
+		var returnedData []ColumnData
+
+		allCombinations := generatePermutations(array)
+		for _, e := range allCombinations {
+			returnedData = append(returnedData, ColumnData{Col1: strings.Join(e, ", ")})
+		}
+
 		// Respond back with a success message
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(columnData)
+		json.NewEncoder(w).Encode(returnedData)
 
 	} else {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
