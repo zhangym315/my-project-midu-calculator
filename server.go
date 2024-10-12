@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/tealeg/xlsx"
+	"github.com/xuri/excelize/v2"
 )
 
 type MiduPriceData struct {
@@ -131,23 +131,32 @@ func deleteRowHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func exportXLSXHandler(w http.ResponseWriter, r *http.Request) {
-	file := xlsx.NewFile()
-	sheet, _ := file.AddSheet("Sheet1")
-	row := sheet.AddRow()
-
+	file := excelize.NewFile()
+	sheet := "Sheet1"
+	
 	// Add header
-	row.WriteSlice(&[]string{"Column 1", "Column 2", "Column 3", "Column 4", "Column 5"}, -1)
+	headers := []string{"Column 1", "Column 2", "Column 3", "Column 4", "Column 5"}
+	for i, header := range headers {
+		cell := fmt.Sprintf("%c1", 'A'+i)
+		file.SetCellValue(sheet, cell, header)
+	}
 
 	// Add data rows
-	for _, dataRow := range formData.Rows {
-		row = sheet.AddRow()
-		row.WriteSlice(&[]string{dataRow.Col1, dataRow.Col2, dataRow.Col3, dataRow.Col4, dataRow.Col5}, -1)
+	for i, dataRow := range formData.Rows {
+		rowData := []string{dataRow.Col1, dataRow.Col2, dataRow.Col3, dataRow.Col4, dataRow.Col5}
+		for j, value := range rowData {
+			cell := fmt.Sprintf("%c%d", 'A'+j, i+2)
+			file.SetCellValue(sheet, cell, value)
+		}
 	}
 
 	// Write file to response
 	w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 	w.Header().Set("Content-Disposition", `attachment; filename="form_data.xlsx"`)
-	file.Write(w)
+	if err := file.Write(w); err != nil {
+		http.Error(w, "Failed to generate Excel file", http.StatusInternalServerError)
+		return
+	}
 }
 
 // Structs for decoding the two arrays
@@ -419,6 +428,81 @@ func submitAllHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func exportExcelHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var data struct {
+		MiduData   []map[string]string `json:"miduData"`
+		FormData   []map[string]string `json:"formData"`
+		ResultData []map[string]string `json:"resultData"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+		http.Error(w, "Invalid JSON: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+//	log.Printf("Received data: %+v", data)
+
+	f := excelize.NewFile()
+
+	// 密度价格表 sheet
+	f.SetSheetName("Sheet1", "密度价格表")
+	f.SetCellValue("密度价格表", "A1", "密度最小")
+	f.SetCellValue("密度价格表", "B1", "密度最大")
+	f.SetCellValue("密度价格表", "C1", "价格")
+	for i, row := range data.MiduData {
+		f.SetCellValue("密度价格表", fmt.Sprintf("A%d", i+2), row["minMidu"])
+		f.SetCellValue("密度价格表", fmt.Sprintf("B%d", i+2), row["maxMidu"])
+		f.SetCellValue("密度价格表", fmt.Sprintf("C%d", i+2), row["price"])
+	}
+
+	// 拼货 sheet
+	f.NewSheet("拼货")
+	f.SetCellValue("拼货", "A1", "运输方式")
+	f.SetCellValue("拼货", "B1", "货号")
+	f.SetCellValue("拼货", "C1", "重量")
+	f.SetCellValue("拼货", "D1", "体积")
+	f.SetCellValue("拼货", "E1", "单票密度")
+	for i, row := range data.FormData {
+		f.SetCellValue("拼货", fmt.Sprintf("A%d", i+2), row["col1"])
+		f.SetCellValue("拼货", fmt.Sprintf("B%d", i+2), row["col2"])
+		f.SetCellValue("拼货", fmt.Sprintf("C%d", i+2), row["col3"])
+		f.SetCellValue("拼货", fmt.Sprintf("D%d", i+2), row["col4"])
+		f.SetCellValue("拼货", fmt.Sprintf("E%d", i+2), row["col5"])
+	}
+
+	// 生成的数据 sheet
+	f.NewSheet("生成的数据")
+	f.SetCellValue("生成的数据", "A1", "序号")
+	f.SetCellValue("生成的数据", "B1", "拼货组合")
+	f.SetCellValue("生成的数据", "C1", "拼货重量")
+	f.SetCellValue("生成的数据", "D1", "拼货体积")
+	f.SetCellValue("生成的数据", "E1", "拼货密度")
+	f.SetCellValue("生成的数据", "F1", "拼货价格")
+	for i, row := range data.ResultData {
+		f.SetCellValue("生成的数据", fmt.Sprintf("A%d", i+2), row["col0"])
+		f.SetCellValue("生成的数据", fmt.Sprintf("B%d", i+2), row["col1"])
+		f.SetCellValue("生成的数据", fmt.Sprintf("C%d", i+2), row["col2"])
+		f.SetCellValue("生成的数据", fmt.Sprintf("D%d", i+2), row["col3"])
+		f.SetCellValue("生成的数据", fmt.Sprintf("E%d", i+2), row["col4"])
+		f.SetCellValue("生成的数据", fmt.Sprintf("F%d", i+2), row["col5"])
+	}
+
+	w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+	w.Header().Set("Content-Disposition", "attachment; filename=exported_data.xlsx")
+
+	if err := f.Write(w); err != nil {
+		log.Printf("Error writing Excel file: %v", err)
+		http.Error(w, "Failed to generate Excel file", http.StatusInternalServerError)
+	} else {
+		log.Println("Excel file generated successfully")
+	}
+}
+
 func main() {
 	// Serve static files (e.g., CSS and JS files)
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
@@ -432,6 +516,7 @@ func main() {
 	http.HandleFunc("/download-xlsx", exportXLSXHandler)
 	http.HandleFunc("/delete-row", deleteRowHandler)
 	http.HandleFunc("/submitall", submitAllHandler)
+	http.HandleFunc("/export-excel", exportExcelHandler)
 
 	fmt.Println("Starting server at :8080")
 	if err := http.ListenAndServe(":8080", nil); err != nil {
