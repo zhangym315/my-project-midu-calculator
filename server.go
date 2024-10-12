@@ -273,7 +273,7 @@ func submitAllHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Print the body as a string to the console
-		fmt.Println("Request Body:", string(body))
+		//		fmt.Println("Request Body:", string(body))
 		// JSON data
 		jsonData := string(body)
 
@@ -357,7 +357,7 @@ func submitAllHandler(w http.ResponseWriter, r *http.Request) {
 			}
 
 			numberToHV[row.Col2] = HeavyAndVolume{parsedH, parsedV}
-			fmt.Printf("Received row: col1=%s, col2=%s, col3=%s, col4=%s, col5=%s\n", row.Col1, row.Col2, row.Col3, row.Col4, row.Col5)
+			//			fmt.Printf("Received row: col1=%s, col2=%s, col3=%s, col4=%s, col5=%s\n", row.Col1, row.Col2, row.Col3, row.Col4, row.Col5)
 		}
 
 		var returnedData []ColumnDataReturnedToHtml
