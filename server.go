@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -165,12 +166,24 @@ type ColumnData struct {
 }
 
 type ColumnDataReturnedToHtml struct {
-	Col0 string `json:"col0"`
-	Col1 string `json:"col1"`
-	Col2 string `json:"col2"`
-	Col3 string `json:"col3"`
-	Col4 string `json:"col4"`
-	Col5 string `json:"col5"`
+	Col0       string `json:"col0"`
+	Col1       string `json:"col1"`
+	Col2       string `json:"col2"`
+	Col3       string `json:"col3"`
+	Col4       string `json:"col4"`
+	Col5       string `json:"col5"`
+	TotalPrice float64
+}
+
+type PriceTable struct {
+	Min   float64
+	Max   float64
+	Price float64
+}
+
+type HeavyAndVolume struct {
+	H float64
+	V float64
 }
 
 // Function to generate all permutations of the elements
@@ -239,6 +252,17 @@ func partition(arr []string) [][][]string {
 	return result
 }
 
+func getPriceFromTable(t []PriceTable, midu float64) float64 {
+	for _, row := range t {
+		if midu <= row.Max && midu >= row.Min {
+			return row.Price * midu
+		}
+	}
+
+	fmt.Printf("Error: failed to get price from midu=%f\n", midu)
+	return 0
+}
+
 func submitAllHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		// Read the entire body
@@ -295,29 +319,94 @@ func submitAllHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Midu Data:", miduData)
 		fmt.Println("Column Data:", columnData)
 
+		// construct price table
+		var pricetable []PriceTable
+		for _, row := range miduData {
+			num1, err := strconv.ParseFloat(row.MinMidu, 64) // 64 specifies double precision
+			if err != nil {
+				fmt.Printf("Error parsing midu row: MinMidu=%s, MaxMidu=%s, Price=%s\n", row.MinMidu, row.MaxMidu, row.Price)
+			}
+
+			num2, err := strconv.ParseFloat(row.MaxMidu, 64) // 64 specifies double precision
+			if err != nil {
+				fmt.Printf("Error parsing midu row: MinMidu=%s, MaxMidu=%s, Price=%s\n", row.MinMidu, row.MaxMidu, row.Price)
+			}
+
+			num3, err := strconv.ParseFloat(row.Price, 64) // 64 specifies double precision
+			if err != nil {
+				fmt.Printf("Error parsing midu row: MinMidu=%s, MaxMidu=%s, Price=%s\n", row.MinMidu, row.MaxMidu, row.Price)
+			}
+
+			pricetable = append(pricetable, PriceTable{num1, num2, num3})
+			//fmt.Printf("Received row: MinMidu=%s, MaxMidu=%s, Price=%s\n", row.MinMidu, row.MaxMidu, row.Price)
+		}
+
 		// Print received data
+		// huohao to row
 		var array []string
+		numberToHV := make(map[string]HeavyAndVolume)
 		for _, row := range columnData {
 			array = append(array, row.Col2)
+			parsedH, err := strconv.ParseFloat(row.Col3, 64)
+			if err != nil {
+				fmt.Printf("Error: Failed to parse 重量=%s, 货号=%s\n", row.Col3, row.Col2)
+			}
+			parsedV, err := strconv.ParseFloat(row.Col4, 64)
+			if err != nil {
+				fmt.Printf("Error: Failed to parse 体积=%s, 货号=%s\n", row.Col4, row.Col2)
+			}
+
+			numberToHV[row.Col2] = HeavyAndVolume{parsedH, parsedV}
 			fmt.Printf("Received row: col1=%s, col2=%s, col3=%s, col4=%s, col5=%s\n", row.Col1, row.Col2, row.Col3, row.Col4, row.Col5)
 		}
-
-		for _, row := range miduData {
-			fmt.Printf("Received row: col1=%s, col2=%s, col3=%s, col4=%s, col5=%s\n", row.MinMidu, row.MaxMidu, row.Price)
-		}
-
-		fmt.Println("array:", array)
 
 		var returnedData []ColumnDataReturnedToHtml
 
 		allCombinations := partition(array)
-		indexNumber := 1
+		/*
+		 * allCombinations is like:
+		 *
+		 */
 		for _, e := range allCombinations {
+
 			var rowData string
+			var totalPrice float64
+			var totalH string
+			var totalV string
+			var totalHV string
 			for _, r := range e {
-				rowData = rowData + "(" + strings.Join(r, ", ") + ")\n"
+				rowData = rowData + "(" + strings.Join(r, ", ") + ")"
+				var cH float64
+				var cV float64
+				var sH string
+				var sV string
+				for _, element := range r {
+					cH += (numberToHV[element].H)
+					cV += (numberToHV[element].V)
+					sH += strconv.FormatFloat(numberToHV[element].H, 'f', -1, 64) + " "
+					sV += strconv.FormatFloat(numberToHV[element].V, 'f', -1, 64) + " "
+
+				}
+				totalH = totalH + "(" + sH + ") "
+				totalV = totalV + "(" + sV + ") "
+				totalHV = totalHV + "(" + strconv.FormatFloat(cH/cV, 'f', -1, 64) + ") "
+				totalPrice += getPriceFromTable(pricetable, (cH / cV))
 			}
-			returnedData = append(returnedData, ColumnDataReturnedToHtml{Col0: strconv.Itoa(indexNumber), Col1: rowData})
+
+			returnedData = append(returnedData, ColumnDataReturnedToHtml{Col0: "0", Col1: rowData,
+				Col2: totalH, Col3: totalV, Col4: totalHV,
+				Col5:       strings.TrimRight(strings.TrimRight(fmt.Sprintf("%f", totalPrice), "0"), "."),
+				TotalPrice: totalPrice})
+		}
+
+		// Sort the slice by the Age field
+		sort.Slice(returnedData, func(i, j int) bool {
+			return returnedData[i].TotalPrice < returnedData[j].TotalPrice
+		})
+
+		indexNumber := 1
+		for i := range returnedData {
+			returnedData[i].Col0 = strconv.Itoa(indexNumber)
 			indexNumber++
 		}
 
