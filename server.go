@@ -133,7 +133,7 @@ func deleteRowHandler(w http.ResponseWriter, r *http.Request) {
 func exportXLSXHandler(w http.ResponseWriter, r *http.Request) {
 	file := excelize.NewFile()
 	sheet := "Sheet1"
-	
+
 	// Add header
 	headers := []string{"Column 1", "Column 2", "Column 3", "Column 4", "Column 5"}
 	for i, header := range headers {
@@ -392,19 +392,19 @@ func submitAllHandler(w http.ResponseWriter, r *http.Request) {
 				for _, element := range r {
 					cH += (numberToHV[element].H)
 					cV += (numberToHV[element].V)
-					sH += strconv.FormatFloat(numberToHV[element].H, 'f', -1, 64) + " "
-					sV += strconv.FormatFloat(numberToHV[element].V, 'f', -1, 64) + " "
+					sH += strings.TrimRight(strings.TrimRight(strconv.FormatFloat(numberToHV[element].H, 'f', 3, 64), "0"), ".") + " "
+					sV += strings.TrimRight(strings.TrimRight(strconv.FormatFloat(numberToHV[element].V, 'f', 3, 64), "0"), ".") + " "
 
 				}
 				totalH = totalH + "(" + sH + ") "
 				totalV = totalV + "(" + sV + ") "
-				totalHV = totalHV + "(" + strconv.FormatFloat(cH/cV, 'f', -1, 64) + ") "
+				totalHV = totalHV + "(" + strings.TrimRight(strings.TrimRight(strconv.FormatFloat(cH/cV, 'f', 3, 64), "0"), ".") + ") "
 				totalPrice += getPriceFromTable(pricetable, (cH / cV))
 			}
 
 			returnedData = append(returnedData, ColumnDataReturnedToHtml{Col0: "0", Col1: rowData,
 				Col2: totalH, Col3: totalV, Col4: totalHV,
-				Col5:       strings.TrimRight(strings.TrimRight(fmt.Sprintf("%f", totalPrice), "0"), "."),
+				Col5:       strings.TrimRight(strings.TrimRight(fmt.Sprintf("%.3f", totalPrice), "0"), "."),
 				TotalPrice: totalPrice})
 		}
 
@@ -445,7 +445,7 @@ func exportExcelHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-//	log.Printf("Received data: %+v", data)
+	//	log.Printf("Received data: %+v", data)
 
 	f := excelize.NewFile()
 
